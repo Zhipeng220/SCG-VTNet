@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+data/
+results/
+checkpoints/
+*.log
+*.npy
+*.npz
+*.csv
+*.pt
+*.pth
+*.pkl
+*.zip
