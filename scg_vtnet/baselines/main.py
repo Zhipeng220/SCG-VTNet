@@ -409,7 +409,6 @@ def define_experiments(args):
         study_title = "Core Component Ablation Study"
         keypoints_desc = "w/o-style ablation of AC-GCAT"
 
-        # [MODIFIED]: 移除了单独硬编码的 "anatomical_weight_final": 0.001，因为它已经统一在 sota_baseline_config 中了
         full_config = {
             **sota_baseline_config,
         }
@@ -1000,9 +999,9 @@ if __name__ == "__main__":
     sota_only - -epochs
     50 \
     - -train_csv_path
-    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/NUS_Hand_Posture/all_landmarks_multimodal.csv" \
+    "data/NUS_Hand_Posture/all_landmarks_multimodal.csv" \
     - -image_features_path
-    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/NUS_Hand_Posture/all_image_features_resnet50.npy" \
+    "data/NUS_Hand_Posture/all_image_features_resnet50.npy" \
     - -output_dir
     "./results_NUS_Hand_Posture"
 
@@ -1013,9 +1012,9 @@ if __name__ == "__main__":
     sota_only - -epochs
     50 \
     - -train_csv_path
-    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/Indian Sign Language/all_landmarks_multimodal.csv" \
+    "data/Indian Sign Language/all_landmarks_multimodal.csv" \
     - -image_features_path
-    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/Indian Sign Language/all_image_features_resnet50.npy" \
+    "data/Indian Sign Language/all_image_features_resnet50.npy" \
     - -output_dir
     "./results_Indian_Sign_Language"
 
@@ -1026,9 +1025,9 @@ if __name__ == "__main__":
     sota_only - -epochs
     50 \
     - -train_csv_path
-    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/asl_dataset/all_landmarks_multimodal.csv" \
+    "data/asl_dataset/all_landmarks_multimodal.csv" \
     - -image_features_path
-    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/asl_dataset/all_image_features_resnet50.npy" \
+    "data/asl_dataset/all_image_features_resnet50.npy" \
     - -output_dir
     "./results_asl_dataset"
 
@@ -1040,9 +1039,9 @@ if __name__ == "__main__":
     sota_only - -epochs
     50 \
     - -train_csv_path
-    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/ASL_Alphabet/all_landmarks_multimodal.csv" \
+    "data/ASL_Alphabet/all_landmarks_multimodal.csv" \
     - -image_features_path
-    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/ASL_Alphabet/all_image_features_resnet50.npy" \
+    "data/ASL_Alphabet/all_image_features_resnet50.npy" \
     - -output_dir
     "./results_ASL_Alphabet_Old"
 

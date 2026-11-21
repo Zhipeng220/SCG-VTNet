@@ -34,13 +34,13 @@ def get_args():
     # Experiment control arguments
 
     parser.add_argument('--train_csv_path', type=str,
-                        default="./data/ASL_Alphabet_V2/processed_train/zerofill_landmarks_mask.csv",
+                        default="data/asl_alphabet/processed_train/zerofill_landmarks_mask.csv",
                         help="Path to the training CSV file (should include 'image_path' column).")
     parser.add_argument('--test_csv_path', type=str,
                         default="./data/ASL_Alphabet_Processed_Full/test_landmarks_multimodal.csv",
                         help="Path to the external test CSV file for test mode.")
     parser.add_argument('--image_features_path', type=str,
-                        default="./data/ASL_Alphabet_V2/processed_train/zerofill_visual_tokens_layer4_compact.npy",
+                        default="data/asl_alphabet/processed_train/zerofill_visual_tokens_layer4_compact.npy",
                         help="Path to the pre-extracted .npy file for image features.")
 
     parser.add_argument('--global_image_features_path', type=str, default=None,

@@ -44,7 +44,6 @@ class MLPBaseline(nn.Module):
         )
         self.fc = nn.Linear(256, num_classes)
 
-    # --- [MODIFIED] 更新签名以匹配 train.py 的调用 ---
     def forward(self, x_keypoints, x_image_features, hand_detected=None):  # 忽略 x_image_features
         x = x_keypoints # 仅使用关键点
         features = self.main(x.reshape(x.size(0), -1))
@@ -77,7 +76,6 @@ class AdvancedAttentionModel(nn.Module):
         self.final_norm = nn.LayerNorm(embed_dim)
         self.fc = nn.Linear(embed_dim * 21, num_classes)  # Flattened features
 
-    # --- [MODIFIED] 更新签名以匹配 train.py 的调用 ---
     def forward(self, x_keypoints, x_image_features, hand_detected=None):  # 忽略 x_image_features
         x = x_keypoints # 仅使用关键点
         # Only use first 3 dims for pos encoding
@@ -174,7 +172,7 @@ class HybridAttentionModel(nn.Module):
                  use_gated_fusion=True, use_dynamic_graph=True,
                  image_feature_dim=2048, visual_token_count=49,
                  use_cross_attn=True, use_gcn_branch=True,
-                 use_keypoint_refinement=False, refine_scale=0.05, uniform_visual_attention=False): # <--- 这就是您需要的那一行
+                 use_keypoint_refinement=False, refine_scale=0.05, uniform_visual_attention=False):
         # --- [ MODIFIED: End ] ---
         super().__init__()
         self.embed_dim = embed_dim

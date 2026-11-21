@@ -46,10 +46,10 @@ def make_model(config, num_classes):
 
 
 def evaluate(args):
-    revision = args.root / "SCG-VTNet_修回实验_20261115"
-    data_dir = args.root / "AC-GCAT/data/ASL_Alphabet_V2/processed_train"
-    history = args.root / "AC-GCAT/experiment_results/fair_e1_e7"
-    sys.path.insert(0, str(revision / "code/baselines"))
+    revision = Path(__file__).resolve().parents[1]
+    data_dir = args.root / "data/asl_alphabet/processed_train"
+    history = args.root / "results/historical/fair_e1_e7"
+    sys.path.insert(0, str(revision / "baselines"))
     from main import load_experiment_config
     from train import forward_model, parse_model_outputs, test_robustness, unpack_batch
     from utils import IndexedMultimodalDataset, add_advanced_features, get_feature_columns

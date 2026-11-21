@@ -4,19 +4,19 @@ import numpy as np,pandas as pd,torch,torchvision,mediapipe as mp,cv2,joblib
 from PIL import Image
 from torchvision import models,transforms
 from torchvision.models.feature_extraction import create_feature_extractor
-P=Path(__file__).resolve().parents[1];sys.path.insert(0,str(P/'code'/'baselines'));from model import HybridAttentionModel,ImageOnlyBaseline
-sp=importlib.util.spec_from_file_location('spatial',r'E:\AC-GCAT\AC-GCAT\data\ASL_Alphabet_V2\data_spatial_tokens.py');spatial=importlib.util.module_from_spec(sp);sp.loader.exec_module(spatial)
-sp2=importlib.util.spec_from_file_location('feature_utils',str(P/'code'/'core'/'utils.py'));fu=importlib.util.module_from_spec(sp2);sp2.loader.exec_module(fu)
+P=Path(__file__).resolve().parents[1];sys.path.insert(0,str(P/'baselines'));from model import HybridAttentionModel,ImageOnlyBaseline
+sp=importlib.util.spec_from_file_location('spatial',P/'extraction'/'data_spatial_tokens.py');spatial=importlib.util.module_from_spec(sp);sp.loader.exec_module(spatial)
+sp2=importlib.util.spec_from_file_location('feature_utils',str(P/'core'/'utils.py'));fu=importlib.util.module_from_spec(sp2);sp2.loader.exec_module(fu)
 parser=argparse.ArgumentParser(description="Time E7 and E2 on one fixed image per class.")
 parser.add_argument("--split", choices=("train","test"), default="train")
 args=parser.parse_args()
-R=P.parent/"AC-GCAT/experiment_results/fair_e1_e7/seed_42"
-root=P.parent/"AC-GCAT/data/archive/asl_alphabet_train/asl_alphabet_train"
-manifest=pd.read_csv(P/"audit/split_manifest_seed42.csv")
+R=P.parent/"results/historical/fair_e1_e7/seed_42"
+root=P.parent/"data/asl_alphabet/images"
+manifest=pd.read_csv(P.parent/"manifests/asl/split_manifest_seed42.csv")
 sm=manifest[manifest.split==args.split].sort_values(["label","image_path"]).groupby("label",sort=True).head(1)
 assert len(sm)==sm.label.nunique()==29
 images=[str(root/Path(str(x).replace(chr(92),"/"))) for x in sm.image_path]
-output=P/"audit"/("cpu_end_to_end_benchmark_test29.json" if args.split=="test" else "cpu_end_to_end_benchmark_new.json")
+output=P.parent/"results"/("cpu_end_to_end_benchmark_test29.json" if args.split=="test" else "cpu_end_to_end_benchmark_new.json")
 
 torch.set_num_threads(2);device='cpu';cfg=json.loads((R/'config_E7_AC-GCAT.json').read_text());model=HybridAttentionModel(input_dim=11,num_classes=29,num_layers=4,num_heads=8,embed_dim=256,dropout=.2,image_feature_dim=2048,visual_token_count=49,use_cross_attn=True,use_gcn_branch=False,use_gated_fusion=True,use_dynamic_graph=False,use_keypoint_refinement=True,refine_scale=.05);model.load_state_dict(torch.load(R/'weights'/'best_model_E7_AC-GCAT_21kpts.pth',map_location='cpu',weights_only=True),strict=True);model.eval();scaler=joblib.load(R/'scaler_E7_AC-GCAT.pkl');
 back=spatial.build_resnet50_extractor('spatial_tokens',torch.device('cpu'));prep=transforms.Compose([transforms.ToTensor(),transforms.Normalize(mean=[.485,.456,.406],std=[.229,.224,.225])]);det=mp.solutions.hands.Hands(static_image_mode=True,max_num_hands=1,min_detection_confidence=.3)

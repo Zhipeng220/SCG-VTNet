@@ -19,10 +19,10 @@ from torchvision import models, transforms
 
 ROOT = Path(__file__).resolve().parents[2]
 REVISION = Path(__file__).resolve().parents[1]
-DATA = ROOT / "AC-GCAT/data/ASL_Alphabet_V2"
-RAW = ROOT / "AC-GCAT/data/archive/asl_alphabet_train/asl_alphabet_train"
-sys.path[:0] = [str(REVISION / "code/baselines"), str(DATA),
-                str(ROOT / "verification_asl_main_20261120")]
+DATA = ROOT / "data/asl_alphabet"
+RAW = ROOT / "data/asl_alphabet/images"
+sys.path[:0] = [str(REVISION / "baselines"), str(REVISION / "extraction"),
+                str(REVISION / "audit")]
 
 from data_spatial_tokens import build_resnet50_extractor, canonical_rgb_image, extract_21x3_landmarks
 from main import load_experiment_config
@@ -52,7 +52,7 @@ def predict(model, config, scaler, encoder, xyz, detected, visual):
 def run(output, per_class, paired=False):
     torch.set_num_threads(4)
     processed = DATA / "processed_train"
-    manifest = pd.read_csv(REVISION / "protocol/asl_frozen_20261120/split_manifest_seed42.csv")
+    manifest = pd.read_csv(ROOT / "manifests/asl/split_manifest_seed42.csv")
     if paired:
         selected = (manifest[manifest.split == "test"].sample(frac=1, random_state=20261120)
                     .groupby("label", sort=True).head(per_class).sort_values("original_index"))
@@ -61,7 +61,7 @@ def run(output, per_class, paired=False):
                     .groupby("label", sort=True).head(per_class))
     landmarks = pd.read_csv(processed / "zerofill_landmarks_mask.csv")
     columns = get_feature_columns(landmarks)
-    history = ROOT / "AC-GCAT/experiment_results/fair_e1_e7/seed_42"
+    history = ROOT / "results/historical/fair_e1_e7/seed_42"
     artifacts = {}
     for method in ("E7", "E2", "E5"):
         config = load_experiment_config(next(history.glob(f"config_{method}_*.json")))
@@ -204,7 +204,7 @@ def run_paired(output, selected, artifacts, resnet, resnet_transform,
         "resnet_weights": str(models.ResNet50_Weights.DEFAULT),
         "efficientnet_weights": str(models.EfficientNet_B0_Weights.DEFAULT),
         "frozen_manifest_sha256": hashlib.sha256(
-            (REVISION / "protocol/asl_frozen_20261120/split_manifest_seed42.csv").read_bytes()
+            (ROOT / "manifests/asl/split_manifest_seed42.csv").read_bytes()
         ).hexdigest(),
     }, indent=2) + "\n", encoding="utf8")
     selected.to_csv(output / "samples.csv", index=False)

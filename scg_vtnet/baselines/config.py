@@ -10,7 +10,6 @@ def get_args():
 
     # --- 实验控制参数 ---
     parser.add_argument('--study_name', type=str, default='core_ablation',
-                        # [MODIFIED] 添加 sota_only
                         choices=['ablation', 'full_ablation',
                                  'hyperparam_embed_dim', 'hyperparam_num_layers',
                                  'hyperparam_num_heads', 'hyperparam_cont_temp',
@@ -44,15 +43,15 @@ def get_args():
     parser.add_argument('--perturbation_seed', type=int, default=20261120)
     parser.add_argument('--train_csv_path', type=str,
                         # [修改] 指向您处理后的 CSV
-                        default="E:/AC-GCAT/AC-GCAT/data/ASL_Alphabet_V2/processed/zerofill_landmarks_mask.csv",
+                        default="data/asl_alphabet/processed_train/zerofill_landmarks_mask.csv",
                         help="Path to the training CSV file (should include 'image_path' column).")
     parser.add_argument('--test_csv_path', type=str,
                         # [修改] 指向测试 CSV (如果 test 模式需要)
-                        default="/Users/gzp/Desktop/静态手势识别/data/ASL_Alphabet_Processed_Full/test_landmarks_multimodal.csv",
+                        default="data/asl_alphabet/processed_test/test_landmarks_multimodal.csv",
                         help="Path to the external test CSV file for test mode.")
     parser.add_argument('--image_features_path', type=str,
                         # [修改] 指向您生成的 NPY 文件
-                        default="E:/AC-GCAT/AC-GCAT/data/ASL_Alphabet_V2/processed/zerofill_visual_tokens_layer4_compact.npy",
+                        default="data/asl_alphabet/processed_train/zerofill_visual_tokens_layer4_compact.npy",
                         help="Path to the pre-extracted .npy file for image features.")
 
     parser.add_argument('--global_image_features_path', type=str, default=None,

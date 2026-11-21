@@ -227,7 +227,6 @@ def add_advanced_features(X_reshaped, hand_detected=None, descriptor_mode="all")
     return X_engineered
 
 
-# [MODIFIED] 添加 use_advanced_features 标志 和 seed 参数
 def load_and_preprocess_train_data(csv_path, image_features_path, use_advanced_features=True, seed=42,
                                    aar_descriptor="all"):
 
@@ -280,7 +279,6 @@ def load_and_preprocess_train_data(csv_path, image_features_path, use_advanced_f
     X_raw_xyz = X_reshaped[..., :3].astype(np.float32)
     X_raw_xyz[hand_detected == 0] = 0.0
 
-    # --- [MODIFIED] 条件性特征工程 ---
     if use_advanced_features:
         X_engineered_reshaped = add_advanced_features(X_reshaped, hand_detected, descriptor_mode=aar_descriptor)  # Apply selected AAR feature engineering
     else:
@@ -361,7 +359,6 @@ def load_and_preprocess_train_data(csv_path, image_features_path, use_advanced_f
     return data_dict, scaler, label_encoder, sampler, input_dim_engineered
 
 
-# [MODIFIED] 添加 use_advanced_features 标志
 def load_and_preprocess_test_data(csv_path, image_features_path, scaler, label_encoder,
                                   use_advanced_features=True, aar_descriptor="all"):
 
@@ -411,7 +408,6 @@ def load_and_preprocess_test_data(csv_path, image_features_path, scaler, label_e
     X_raw_xyz = X_reshaped[..., :3].astype(np.float32)
     X_raw_xyz[hand_detected == 0] = 0.0
 
-    # --- [MODIFIED] 条件性特征工程 ---
     if use_advanced_features:
         X_engineered_reshaped = add_advanced_features(X_reshaped, hand_detected, descriptor_mode=aar_descriptor)
     else:
