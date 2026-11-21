@@ -392,6 +392,19 @@ def define_experiments(args):
             "fusion": "skeleton-conditioned gated cross-attention",
         }
 
+    elif args.study_name == 'asl_matched':
+        if args.frozen_manifest is None or args.matched_variant is None:
+            raise ValueError("ASL matched training requires a frozen manifest and one variant")
+        study_title = "ASL matched component comparison"
+        keypoints_desc = "AAR with 49-token visual context"
+        changes = {
+            "F": {},
+            "A0": {"use_anatomical_loss": False, "anat_target": "none", "anatomical_weight_final": 0.0},
+            "G0": {"use_gated_fusion": False},
+            "Uniform": {"uniform_visual_attention": True},
+        }
+        experiments[args.matched_variant] = {**sota_baseline_config, **changes[args.matched_variant]}
+
     elif args.study_name == 'core_ablation':
         study_title = "Core Component Ablation Study"
         keypoints_desc = "w/o-style ablation of AC-GCAT"
@@ -652,6 +665,7 @@ def main(args):
                 use_advanced_features=use_advanced_features,
                 seed=args.seed,
                 aar_descriptor=aar_descriptor,
+                frozen_manifest=args.frozen_manifest,
             )
 
             per_exp_scaler_path = os.path.join(output_dir, f"scaler_{safe_name}.pkl")
@@ -740,12 +754,35 @@ def main(args):
                     use_gcn_branch=config.get("use_gcn_branch", False),
                     use_keypoint_refinement=config.get("use_keypoint_refinement", args.use_keypoint_refinement),
                     refine_scale=config.get("refine_scale", args.refine_scale),
+                    uniform_visual_attention=config.get("uniform_visual_attention", False),
                     visual_token_count=visual_token_count,
                 )
 
             logging.info(
                 f"Instantiated model: {model.__class__.__name__} with keypoint_dim: {input_dim}, embed_dim: {current_embed_dim}")
 
+            if args.study_name == "asl_matched":
+                if image_feature_shape != (49, 2048):
+                    raise ValueError("Matched ASL configurations require 49 x 2048 visual tokens")
+                import hashlib
+                from pathlib import Path
+                unused_params = 0
+                if model.uniform_visual_attention:
+                    width = model.embed_dim
+                    unused_params = (sum(p.numel() for p in model.img_k_proj.parameters())
+                                     + sum(p.numel() for p in model.cross_attn_norm_kpt.parameters())
+                                     + 2 * width * (width + 1))
+                experiment_config.update({
+                    "train_args": vars(args),
+                    "frozen_manifest_sha256": hashlib.sha256(Path(args.frozen_manifest).read_bytes()).hexdigest(),
+                    "device": str(device), "torch_version": torch.__version__,
+                    "parameters": sum(p.numel() for p in model.parameters()),
+                    "unused_query_key_parameters": unused_params,
+                })
+                with open(config_path, "w", encoding="utf-8") as config_file:
+                    json.dump(experiment_config, config_file, indent=2)
+                config["prediction_dir"] = output_dir
+                config["perturbation_seed"] = args.perturbation_seed
             optimizer = AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
             total_steps = args.epochs * len(train_loader)
             if total_steps == 0:
@@ -776,6 +813,10 @@ def main(args):
                                   train_args, device,
                                   contrastive_weight=current_contrastive_weight)
 
+            if args.study_name == "asl_matched":
+                selected_epoch = 1 + int(np.argmax(history["val_acc"]))
+                with open(os.path.join(output_dir, "training_history.json"), "w", encoding="utf-8") as stream:
+                    json.dump({**history, "selected_epoch": selected_epoch}, stream, indent=2)
             plot_path = os.path.join(paths['plots'], f"history_{safe_name}.png")
             plot_history(history, plot_path)
 
@@ -944,3 +985,67 @@ if __name__ == "__main__":
     args = get_args()
     logging.info(f"Running study: {args.study_name}")
     main(args)
+
+    # !/bin/bash
+    # run_all_datasets.sh
+
+    # 设置为在第一个错误处停止
+    """
+    set - e
+
+    echo
+    "--- [ 1/4 ] 正在运行: NUS Hand Posture Dataset ---"
+    python
+    main.py - -study_name
+    sota_only - -epochs
+    50 \
+    - -train_csv_path
+    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/NUS_Hand_Posture/all_landmarks_multimodal.csv" \
+    - -image_features_path
+    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/NUS_Hand_Posture/all_image_features_resnet50.npy" \
+    - -output_dir
+    "./results_NUS_Hand_Posture"
+
+    echo
+    "--- [ 2/4 ] 正在运行: Indian Sign Language Dataset ---"
+    python
+    main.py - -study_name
+    sota_only - -epochs
+    50 \
+    - -train_csv_path
+    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/Indian Sign Language/all_landmarks_multimodal.csv" \
+    - -image_features_path
+    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/Indian Sign Language/all_image_features_resnet50.npy" \
+    - -output_dir
+    "./results_Indian_Sign_Language"
+
+    echo
+    "--- [ 3/4 ] 正在运行: asl_dataset (新) ---"
+    python
+    main.py - -study_name
+    sota_only - -epochs
+    50 \
+    - -train_csv_path
+    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/asl_dataset/all_landmarks_multimodal.csv" \
+    - -image_features_path
+    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/asl_dataset/all_image_features_resnet50.npy" \
+    - -output_dir
+    "./results_asl_dataset"
+
+    echo
+    "--- [ 4/4 ] 正在运行: ASL Alphabet (旧) ---"
+    # 注意：这些路径来自你 config.py 的默认值
+    python
+    main.py - -study_name
+    sota_only - -epochs
+    50 \
+    - -train_csv_path
+    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/ASL_Alphabet/all_landmarks_multimodal.csv" \
+    - -image_features_path
+    "/Users/gzp/Desktop/AC-GCAT/AC-GCAT/data/ASL_Alphabet/all_image_features_resnet50.npy" \
+    - -output_dir
+    "./results_ASL_Alphabet_Old"
+
+    echo
+    "--- 所有 4 个数据集的实验均已完成 ---"
+    """

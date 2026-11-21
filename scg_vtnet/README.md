@@ -32,3 +32,8 @@ python scg_vtnet/protocol/run_nus_strict.py --processed-dir data/NUS_Hand_Postur
 ```
 
 完整 E1–E7 对照需要各自的特征文件，不能把代理特征的结果当成原始 E1–E7 对照。NUS 入口要求提供与特征行序一致的分组划分清单（含 `original_index`、`split`、`group_id`），输出目录不得已存在。分组隔离不等同于受试者独立划分。
+
+
+## Revised evaluation code (2026-11-21)
+
+See [reproduction/README.md](reproduction/README.md) for the source and entry points for the matched ASL, paired degradation, grouped NUS, timing and figure evaluations.

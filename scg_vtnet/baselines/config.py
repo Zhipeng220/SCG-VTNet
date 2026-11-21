@@ -20,7 +20,7 @@ def get_args():
                                  'visual_modulation',
                                  'aar_construction',
                                  'objective_construction',
-                                 'fair_e1_e7'],
+                                 'fair_e1_e7', 'asl_matched'],
                         help="Specify the study to run: 'ablation' for component analysis, "
                              "'hyperparam_embed_dim' for embedding dimension, "
                              "'hyperparam_num_layers' for attention layers, "
@@ -39,17 +39,20 @@ def get_args():
 
     # ... (文件的其余部分保持不变) ...
 
+    parser.add_argument('--frozen_manifest', help="Explicit frozen split CSV.")
+    parser.add_argument('--matched_variant', choices=['F', 'A0', 'G0', 'Uniform'])
+    parser.add_argument('--perturbation_seed', type=int, default=20261120)
     parser.add_argument('--train_csv_path', type=str,
                         # [修改] 指向您处理后的 CSV
-                        default="./data/ASL_Alphabet_V2/processed_train/zerofill_landmarks_mask.csv",
+                        default="E:/AC-GCAT/AC-GCAT/data/ASL_Alphabet_V2/processed/zerofill_landmarks_mask.csv",
                         help="Path to the training CSV file (should include 'image_path' column).")
     parser.add_argument('--test_csv_path', type=str,
                         # [修改] 指向测试 CSV (如果 test 模式需要)
-                        default=None,
+                        default="/Users/gzp/Desktop/静态手势识别/data/ASL_Alphabet_Processed_Full/test_landmarks_multimodal.csv",
                         help="Path to the external test CSV file for test mode.")
     parser.add_argument('--image_features_path', type=str,
                         # [修改] 指向您生成的 NPY 文件
-                        default="./data/ASL_Alphabet_V2/processed_train/zerofill_visual_tokens_layer4_compact.npy",
+                        default="E:/AC-GCAT/AC-GCAT/data/ASL_Alphabet_V2/processed/zerofill_visual_tokens_layer4_compact.npy",
                         help="Path to the pre-extracted .npy file for image features.")
 
     parser.add_argument('--global_image_features_path', type=str, default=None,

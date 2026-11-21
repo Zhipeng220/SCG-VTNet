@@ -229,7 +229,7 @@ def add_advanced_features(X_reshaped, hand_detected=None, descriptor_mode="all")
 
 # [MODIFIED] 添加 use_advanced_features 标志 和 seed 参数
 def load_and_preprocess_train_data(csv_path, image_features_path, use_advanced_features=True, seed=42,
-                                   aar_descriptor="all"):
+                                   aar_descriptor="all", frozen_manifest=None):
 
     """
     (V19 - Scheme B)
@@ -294,17 +294,37 @@ def load_and_preprocess_train_data(csv_path, image_features_path, use_advanced_f
 
     # Encode labels before splitting. The scaler is fit only on the train split.
     label_encoder = LabelEncoder()
-    encoded_labels = label_encoder.fit_transform(labels)
-
     indices = np.arange(len(data))
-    idx_train_val, idx_test, y_train_val, y_test = train_test_split(
-        indices, encoded_labels,
-        test_size=0.2, random_state=seed, stratify=encoded_labels
-    )
-    idx_train, idx_val, y_train, y_val = train_test_split(
-        idx_train_val, y_train_val,
-        test_size=0.25, random_state=seed, stratify=y_train_val
-    )
+    if frozen_manifest is None:
+        encoded_labels = label_encoder.fit_transform(labels)
+        idx_train_val, idx_test, y_train_val, y_test = train_test_split(
+            indices, encoded_labels,
+            test_size=0.2, random_state=seed, stratify=encoded_labels
+        )
+        idx_train, idx_val, y_train, y_val = train_test_split(
+            idx_train_val, y_train_val,
+            test_size=0.25, random_state=seed, stratify=y_train_val
+        )
+    else:
+        frozen = pd.read_csv(frozen_manifest)
+        original = frozen["original_index"].to_numpy()
+        if sorted(original) != list(indices) or set(frozen["split"]) != {"train", "val", "test"}:
+            raise ValueError("Frozen manifest must assign each input row to exactly one split")
+        aligned = data.iloc[original].reset_index(drop=True)
+        for column in ("image_path", "label", "hand_detected"):
+            lhs = aligned[column]
+            rhs = frozen[column]
+            if column == "image_path":
+                lhs = lhs.str.replace(chr(92), "/", regex=False)
+            if not np.array_equal(lhs.to_numpy(), rhs.to_numpy()):
+                raise ValueError(f"Frozen manifest differs in {column}")
+        idx_train, idx_val, idx_test = [
+            frozen.loc[frozen["split"] == split, "original_index"].to_numpy()
+            for split in ("train", "val", "test")
+        ]
+        label_encoder.fit(labels[idx_train])
+        encoded_labels = label_encoder.transform(labels)
+        y_train, y_val, y_test = (encoded_labels[index] for index in (idx_train, idx_val, idx_test))
 
     X_train, X_val, X_test = X_engineered_flat[idx_train], X_engineered_flat[idx_val], X_engineered_flat[idx_test]
     raw_train, raw_val, raw_test = X_raw_xyz[idx_train], X_raw_xyz[idx_val], X_raw_xyz[idx_test]
@@ -325,11 +345,12 @@ def load_and_preprocess_train_data(csv_path, image_features_path, use_advanced_f
     X_val[hand_val == 0] = 0.0
     X_test[hand_test == 0] = 0.0
 
-    manifest_path = os.path.join(os.path.dirname(csv_path) or ".", f"split_manifest_seed{seed}.csv")
-    write_split_manifest(manifest_path, data, idx_train, "train", seed, append=False)
-    write_split_manifest(manifest_path, data, idx_val, "val", seed, append=True)
-    write_split_manifest(manifest_path, data, idx_test, "test", seed, append=True)
-    logging.info(f"Split manifest saved to {manifest_path}")
+    if frozen_manifest is None:
+        manifest_path = os.path.join(os.path.dirname(csv_path) or ".", f"split_manifest_seed{seed}.csv")
+        write_split_manifest(manifest_path, data, idx_train, "train", seed, append=False)
+        write_split_manifest(manifest_path, data, idx_val, "val", seed, append=True)
+        write_split_manifest(manifest_path, data, idx_test, "test", seed, append=True)
+        logging.info(f"Split manifest saved to {manifest_path}")
 
     # Weighted Sampler for training set imbalance
     class_counts = np.bincount(y_train)

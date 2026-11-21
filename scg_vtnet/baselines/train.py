@@ -13,6 +13,9 @@ from torch.utils.data import DataLoader
 import random
 
 # Import model classes
+import csv
+from pathlib import Path
+
 from model import MLPBaseline, AdvancedAttentionModel, HybridAttentionModel, ImageOnlyBaseline, VisualTokenTransformerBaseline
 
 
@@ -324,6 +327,7 @@ def final_test_and_report(model_class, model_path, test_loader, device, label_en
         model = model_class(**model_kwargs, use_gated_fusion=use_gated, use_dynamic_graph=use_dynamic,
                             use_cross_attn=use_cross_attn, use_gcn_branch=use_gcn_branch,
                             use_keypoint_refinement=use_keypoint_refinement, refine_scale=refine_scale,
+                            uniform_visual_attention=config.get("uniform_visual_attention", False),
                             visual_token_count=visual_token_count)
         gated_status = "ENABLED" if use_gated else "DISABLED"
         dynamic_status = "ENABLED" if use_dynamic else "DISABLED"
@@ -360,6 +364,8 @@ def final_test_and_report(model_class, model_path, test_loader, device, label_en
             all_labels.append(labels.cpu())
 
     all_labels_np, all_preds_np = torch.cat(all_labels).numpy(), torch.cat(all_preds).numpy()
+    if "prediction_dir" in config:
+        save_matched_predictions(config, "clean", test_loader.dataset, label_encoder, all_labels_np, all_preds_np)
     logging.info(
         f"\nClassification Report:\n{classification_report(all_labels_np, all_preds_np, target_names=label_encoder.classes_, digits=4, zero_division=0)}")
     cm = confusion_matrix(all_labels_np, all_preds_np)
@@ -379,6 +385,20 @@ def final_test_and_report(model_class, model_path, test_loader, device, label_en
         "accuracy": accuracy_score(all_labels_np, all_preds_np),
         "macro_f1": f1_score(all_labels_np, all_preds_np, average="macro", zero_division=0),
     }
+
+
+def save_matched_predictions(config, condition, dataset, encoder, labels, predictions):
+    path = Path(config["prediction_dir"]) / f"predictions_{condition}.csv"
+    with path.open("x", encoding="utf-8", newline="") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["condition", "original_index", "hand_detected", "true_label", "predicted_label"])
+        writer.writerows(
+            (condition, int(index), int(detected), label, prediction)
+            for index, detected, label, prediction in zip(
+                dataset.indices, dataset.hand_detected, encoder.inverse_transform(labels),
+                encoder.inverse_transform(predictions), strict=True,
+            )
+        )
 
 
 def test_robustness(model_class, model_path, test_dataset, device, label_encoder, args, input_dim, config,
@@ -429,6 +449,7 @@ def test_robustness(model_class, model_path, test_dataset, device, label_encoder
         model = model_class(**model_kwargs, use_gated_fusion=use_gated, use_dynamic_graph=use_dynamic,
                             use_cross_attn=use_cross_attn, use_gcn_branch=use_gcn_branch,
                             use_keypoint_refinement=use_keypoint_refinement, refine_scale=refine_scale,
+                            uniform_visual_attention=config.get("uniform_visual_attention", False),
                             visual_token_count=visual_token_count)
         logging.info("Instantiated HybridAttentionModel for robustness test.")
 
@@ -498,6 +519,8 @@ def test_robustness(model_class, model_path, test_dataset, device, label_encoder
     robustness_loader = DataLoader(test_dataset, batch_size=args.batch_size * 2, shuffle=False)
     model.eval()
     for name, noise_config in noise_scenarios.items():
+        if "perturbation_seed" in config:
+            torch.manual_seed(config["perturbation_seed"])
         all_preds, all_labels = [], []
         with torch.no_grad():
             for batch in robustness_loader:
@@ -561,7 +584,11 @@ def test_robustness(model_class, model_path, test_dataset, device, label_encoder
                 all_preds.append(logits.argmax(dim=1).cpu())
                 all_labels.append(labels.cpu())
 
-        acc = accuracy_score(torch.cat(all_labels).numpy(), torch.cat(all_preds).numpy())
+        labels = torch.cat(all_labels).numpy()
+        predictions = torch.cat(all_preds).numpy()
+        if "prediction_dir" in config:
+            save_matched_predictions(config, name, test_dataset, label_encoder, labels, predictions)
+        acc = accuracy_score(labels, predictions)
         results[name] = acc
         logging.info(f"Accuracy with noise '{name}': {acc:.4f}")
 

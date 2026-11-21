@@ -1,6 +1,7 @@
 # model.py
 import torch
 from torch import nn
+from torch.nn import functional as F
 # import torchvision.models as models  # Keep import just in case
 
 
@@ -173,7 +174,7 @@ class HybridAttentionModel(nn.Module):
                  use_gated_fusion=True, use_dynamic_graph=True,
                  image_feature_dim=2048, visual_token_count=49,
                  use_cross_attn=True, use_gcn_branch=True,
-                 use_keypoint_refinement=False, refine_scale=0.05): # <--- 这就是您需要的那一行
+                 use_keypoint_refinement=False, refine_scale=0.05, uniform_visual_attention=False): # <--- 这就是您需要的那一行
         # --- [ MODIFIED: End ] ---
         super().__init__()
         self.embed_dim = embed_dim
@@ -184,6 +185,9 @@ class HybridAttentionModel(nn.Module):
         self.use_gated_fusion = use_gated_fusion
         self.use_dynamic_graph = use_dynamic_graph
         self.use_cross_attn = use_cross_attn
+        self.uniform_visual_attention = uniform_visual_attention
+        if uniform_visual_attention and not use_cross_attn:
+            raise ValueError("Uniform attention requires the visual attention path")
         self.use_gcn_branch = use_gcn_branch
         self.use_keypoint_refinement = use_keypoint_refinement
         self.refine_scale = refine_scale
@@ -249,6 +253,19 @@ class HybridAttentionModel(nn.Module):
             final_fc_input_dim += self.image_feature_dim
 
         self.fc = nn.Linear(final_fc_input_dim, num_classes)
+
+    def uniform_visual_context(self, values, query_count):
+        """Apply uniform per-head weights with the original attention dropout."""
+        batch, tokens, width = values.shape
+        attention = self.cross_attn
+        value_bias = attention.in_proj_bias[2 * width:]
+        projected = F.linear(values, attention.in_proj_weight[2 * width:], value_bias)
+        heads = attention.num_heads
+        projected = projected.reshape(batch, tokens, heads, width // heads).transpose(1, 2)
+        weights = projected.new_full((batch, heads, query_count, tokens), 1.0 / tokens)
+        dropped = F.dropout(weights, p=attention.dropout, training=self.training)
+        fused = (dropped @ projected).transpose(1, 2).reshape(batch, query_count, width)
+        return attention.out_proj(fused), weights
 
     def prepare_image_tokens(self, x_image_features):
         if x_image_features.ndim == 2:
@@ -338,19 +355,26 @@ class HybridAttentionModel(nn.Module):
         # --- [ MODIFIED: Conditional Cross-Attention Fusion ] ---
         cross_attn_weights = None
         if self.use_cross_attn:
-            q_kpt = self.cross_attn_norm_kpt(attn_features)
             image_tokens = self.prepare_image_tokens(x_image_features)
-            k_img = self.img_k_proj(image_tokens)
             v_img = self.img_v_proj(image_tokens)
-            if k_img.size(1) == self.visual_pos_embed.size(1):
-                pos = self.visual_pos_embed.to(device=k_img.device, dtype=k_img.dtype)
-                k_img = k_img + pos
+            pos = None
+            if v_img.size(1) == self.visual_pos_embed.size(1):
+                pos = self.visual_pos_embed.to(device=v_img.device, dtype=v_img.dtype)
                 v_img = v_img + pos
-            fused_attn_features, cross_attn_weights = self.cross_attn(
-                q_kpt, k_img, v_img,
-                need_weights=return_diagnostics,
-                average_attn_weights=False,
-            )
+            if self.uniform_visual_attention:
+                fused_attn_features, uniform_weights = self.uniform_visual_context(v_img, attn_features.size(1))
+                if return_diagnostics:
+                    cross_attn_weights = uniform_weights
+            else:
+                q_kpt = self.cross_attn_norm_kpt(attn_features)
+                k_img = self.img_k_proj(image_tokens)
+                if pos is not None:
+                    k_img = k_img + pos
+                fused_attn_features, cross_attn_weights = self.cross_attn(
+                    q_kpt, k_img, v_img,
+                    need_weights=return_diagnostics,
+                    average_attn_weights=False,
+                )
             fused_attn_features = attn_features + self.cross_attn_dropout(fused_attn_features)
             attn_flat = self.attention_norm(fused_attn_features).reshape(B, -1)
         else:
