@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scg-vtnet"
+version = "0.1.0"
+description = "SCG-VTNet for static hand gesture recognition"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+
+[tool.setuptools.packages.find]
+include = ["scg_vtnet*"]

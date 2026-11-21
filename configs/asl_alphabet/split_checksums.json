@@ -1,0 +1,12 @@
+{
+  "asl_alphabet": {
+    "split_manifest_seed42.csv": "d450325b7be86ab9ad0c8d1de64cd9c38ee3f69066a55a8928d232a20cdcb2fb",
+    "split_manifest_seed43.csv": "cee824d42608ef93d222de60ed0be67a252c536079da4555064ff2af750caec0",
+    "split_manifest_seed44.csv": "32e3be82e89cbaeeaeb4b7682c9869291521db38c17dbe8ecc6e80c3ecf07e36",
+    "split_manifest_seed45.csv": "55627134b28c952c969b79fb56924bf9cb6437f2b3b5ace813a90bb334bef3af",
+    "split_manifest_seed46.csv": "655466451d760b119c6a5dd18f5b6ced3dcb53a23e634901f841444add937b21"
+  },
+  "nus_hand_posture": {
+    "nus.csv": "54ec12fed150d87ea9f453118a514dec72ecae2bb14cea96daea3210c2b937fc"
+  }
+}

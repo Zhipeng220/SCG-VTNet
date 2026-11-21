@@ -1,0 +1,15 @@
+torch
+torchvision
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+joblib
+fvcore
+openpyxl
+mediapipe==0.10.14
+opencv-contrib-python
+Pillow
+tqdm
+timm

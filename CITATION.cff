@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite this repository."
+title: "SCG-VTNet"
+type: software
+authors:
+  - family-names: Guo
+    given-names: Zhipeng
+repository-code: https://github.com/Zhipeng220/SCG-VTNet
+license: MIT

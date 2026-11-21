@@ -1,0 +1,11 @@
+{
+  "paired_test": true,
+  "split_seed": 42,
+  "perturbation_seed": 20261120,
+  "per_class": 10,
+  "checkpoints": [
+    "E2",
+    "E5",
+    "E7"
+  ]
+}
