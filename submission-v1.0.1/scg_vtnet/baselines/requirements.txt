@@ -1,0 +1,9 @@
+torchvision
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+joblib
+fvcore
+openpyxl

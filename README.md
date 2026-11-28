@@ -17,3 +17,7 @@ python -m pip install --no-deps -e .
 ```
 
 See [data preparation](docs/data_preparation.md) and the [reproduction guide](docs/reproduction.md). Run the commands from the repository root. Input datasets and released artifacts are organized in a separate workspace.
+
+## Submitted revision source (v1.0.1)
+
+The source archive accompanying the revised manuscript is available in [`submission-v1.0.1/`](submission-v1.0.1/). Its README describes the experiment scripts and their dependencies. This archive preserves the submitted code alongside the refactored repository modules.
