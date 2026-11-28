@@ -11,7 +11,6 @@ be linked into these locations.
 | `data/splits/asl_alphabet/` | Frozen split CSVs and their freeze metadata |
 | `data/splits/nus_hand_posture/nus.csv` | Strict paired NUS split |
 | `runs/historical/` | Historical checkpoints, model configuration, scalers and label encoders |
-| `internal/ablations/` | Author-side run logs, intermediate predictions and weights |
 
 The ASL inputs use the [ASL Alphabet dataset](https://www.kaggle.com/datasets/grassknoted/asl-alphabet).
 The processed NUS inputs originate from the [NUS Hand Posture Dataset](https://www.ece.nus.edu.sg/stfpage/elepv/NUS-HandSet/).
